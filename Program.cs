@@ -48,7 +48,7 @@ builder.Services.AddDataLayer(builder.Configuration);
 builder.Services.AddBusinessServices();
 
 // Register background services
-builder.Services.AddHostedService<learndotnet.BackgroundServices.OrderMonitoringService>();
+//builder.Services.AddHostedService<learndotnet.BackgroundServices.OrderMonitoringService>();
 
 var app = builder.Build();
 
@@ -74,5 +74,6 @@ app.MapProductEndpoints();
 app.MapCategoryEndpoints();
 app.MapOrderEndpoints();
 app.MapOrderItemEndpoints();
+app.UseDeveloperExceptionPage();
 
 app.Run();
