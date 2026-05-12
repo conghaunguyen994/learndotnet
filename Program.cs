@@ -7,6 +7,10 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+
+builder.WebHost.UseUrls($"http://*:{port}");
+
 // API Versioning
 builder.Services.AddApiVersioning(options =>
 {
@@ -47,25 +51,22 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddDataLayer(builder.Configuration);
 builder.Services.AddBusinessServices();
 
-// Register background services
-//builder.Services.AddHostedService<learndotnet.BackgroundServices.OrderMonitoringService>();
-
 var app = builder.Build();
 
-// Swagger
-if (app.Environment.IsDevelopment())
+app.UseDeveloperExceptionPage();
+
+app.UseSwagger();
+
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "LearnDotnet API v1");
 
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "LearnDotnet API v1");
-
-        options.SwaggerEndpoint("/swagger/v2/swagger.json", "LearnDotnet API v2");
-    });
-}
+    options.SwaggerEndpoint("/swagger/v2/swagger.json", "LearnDotnet API v2");
+});
 
 app.UseHttpsRedirection();
+
+app.MapGet("/", () => "API is running");
 
 // Register endpoints
 app.MapUserEndpointsV1();
@@ -74,6 +75,5 @@ app.MapProductEndpoints();
 app.MapCategoryEndpoints();
 app.MapOrderEndpoints();
 app.MapOrderItemEndpoints();
-app.UseDeveloperExceptionPage();
 
 app.Run();
