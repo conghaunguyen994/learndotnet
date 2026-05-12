@@ -116,4 +116,72 @@ public class AuthenticationService
             return null;
         }
     }
+
+    public (bool Success, string Message, TokenResponse? Token) Register(RegisterRequest request)
+    {
+        // Validate input
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return (false, "Name is required", null);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            return (false, "Email is required", null);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Password))
+        {
+            return (false, "Password is required", null);
+        }
+
+        if (request.Password.Length < 6)
+        {
+            return (false, "Password must be at least 6 characters", null);
+        }
+
+        if (request.Password != request.ConfirmPassword)
+        {
+            return (false, "Passwords do not match", null);
+        }
+
+        // Check if email already exists
+        var existingUser = _userRepository.GetAllUsers().FirstOrDefault(u => u.Email == request.Email);
+        if (existingUser != null)
+        {
+            _logger.LogWarning("Registration failed: Email already exists - {Email}", request.Email);
+            return (false, "Email already exists", null);
+        }
+
+        // Create new user
+        var newUser = new User
+        {
+            Name = request.Name,
+            Email = request.Email
+            // Note: In production, hash the password using bcrypt or similar
+        };
+
+        try
+        {
+            _userRepository.AddUser(newUser);
+
+            var token = GenerateAccessToken(newUser);
+            var refreshToken = GenerateRefreshToken();
+
+            var response = new TokenResponse
+            {
+                AccessToken = token,
+                RefreshToken = refreshToken,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(int.Parse(_configuration["JwtSettings:ExpirationMinutes"] ?? "15"))
+            };
+
+            _logger.LogInformation("User registered successfully: {Email}", request.Email);
+            return (true, "Registration successful", response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during registration for email: {Email}", request.Email);
+            return (false, "An error occurred during registration", null);
+        }
+    }
 }

@@ -32,5 +32,18 @@ public static class AuthenticationEndpoints
             return Results.Ok(result);
         }).WithName("RefreshToken")
         .AllowAnonymous();
+
+        // POST /auth/register
+        app.MapPost("/auth/register", (RegisterRequest request, AuthenticationService authService) =>
+        {
+            var (success, message, token) = authService.Register(request);
+            if (!success)
+            {
+                return Results.BadRequest(new { message });
+            }
+
+            return Results.Created("/auth/register", new { message, token });
+        }).WithName("Register")
+        .AllowAnonymous();
     }
 }
