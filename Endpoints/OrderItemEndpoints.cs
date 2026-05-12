@@ -11,21 +11,21 @@ public static class OrderItemEndpoints
         app.MapGet("/orderitems", (OrderItemService orderItemService) =>
         {
             return orderItemService.GetOrderItems();
-        }).WithName("GetAllOrderItems");
+        }).WithName("GetAllOrderItems").RequireAuthorization();
 
         // GET /orderitems/{id}
         app.MapGet("/orderitems/{id}", (int id, OrderItemService orderItemService) =>
         {
             var orderItem = orderItemService.GetOrderItemById(id);
             return orderItem is not null ? Results.Ok(orderItem) : Results.NotFound();
-        }).WithName("GetOrderItemById");
+        }).WithName("GetOrderItemById").RequireAuthorization();
 
         // POST /orderitems
         app.MapPost("/orderitems", (OrderItem orderItem, OrderItemService orderItemService) =>
         {
             orderItemService.AddOrderItem(orderItem);
             return Results.Created($"/orderitems/{orderItem.Id}", orderItem);
-        }).WithName("CreateOrderItem");
+        }).WithName("CreateOrderItem").RequireAuthorization();
 
         // PUT /orderitems/{id}
         app.MapPut("/orderitems/{id}", (int id, OrderItem updatedOrderItem, OrderItemService orderItemService) =>
@@ -39,7 +39,7 @@ public static class OrderItemEndpoints
             updatedOrderItem.Id = id;
             orderItemService.UpdateOrderItem(updatedOrderItem);
             return Results.NoContent();
-        }).WithName("UpdateOrderItem");
+        }).WithName("UpdateOrderItem").RequireAuthorization();
 
         // DELETE /orderitems/{id}
         app.MapDelete("/orderitems/{id}", (int id, OrderItemService orderItemService) =>
@@ -52,6 +52,6 @@ public static class OrderItemEndpoints
 
             orderItemService.DeleteOrderItem(id);
             return Results.NoContent();
-        }).WithName("DeleteOrderItem");
+        }).WithName("DeleteOrderItem").RequireAuthorization();
     }
 }

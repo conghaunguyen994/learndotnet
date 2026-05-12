@@ -3,7 +3,10 @@ using Asp.Versioning.ApiExplorer;
 using learndotnet.Data;
 using learndotnet.Endpoints;
 using learndotnet.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +54,33 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddDataLayer(builder.Configuration);
 builder.Services.AddBusinessServices();
 
+// Configure JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secret = jwtSettings["Secret"] ?? "";
+var key = Encoding.ASCII.GetBytes(secret);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = true,
+        ValidIssuer = "LearnDotnet",
+        ValidateAudience = true,
+        ValidAudience = "LearnDotnetUsers",
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 app.UseDeveloperExceptionPage();
@@ -66,9 +96,13 @@ app.UseSwaggerUI(options =>
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapGet("/", () => "API is running");
 
 // Register endpoints
+app.MapAuthenticationEndpoints();
 app.MapUserEndpointsV1();
 app.MapUserEndpointsV2();
 app.MapProductEndpoints();

@@ -11,21 +11,21 @@ public static class CategoryEndpoints
         app.MapGet("/categories", (CategoryService categoryService) =>
         {
             return categoryService.GetCategories();
-        }).WithName("GetAllCategories");
+        }).WithName("GetAllCategories").RequireAuthorization();
 
         // GET /categories/{id}
         app.MapGet("/categories/{id}", (int id, CategoryService categoryService) =>
         {
             var category = categoryService.GetCategoryById(id);
             return category is not null ? Results.Ok(category) : Results.NotFound();
-        }).WithName("GetCategoryById");
+        }).WithName("GetCategoryById").RequireAuthorization();
 
         // POST /categories
         app.MapPost("/categories", (Category category, CategoryService categoryService) =>
         {
             categoryService.AddCategory(category);
             return Results.Created($"/categories/{category.Id}", category);
-        }).WithName("CreateCategory");
+        }).WithName("CreateCategory").RequireAuthorization();
 
         // PUT /categories/{id}
         app.MapPut("/categories/{id}", (int id, Category updatedCategory, CategoryService categoryService) =>
@@ -39,7 +39,7 @@ public static class CategoryEndpoints
             updatedCategory.Id = id;
             categoryService.UpdateCategory(updatedCategory);
             return Results.NoContent();
-        }).WithName("UpdateCategory");
+        }).WithName("UpdateCategory").RequireAuthorization();
 
         // DELETE /categories/{id}
         app.MapDelete("/categories/{id}", (int id, CategoryService categoryService) =>
@@ -52,6 +52,6 @@ public static class CategoryEndpoints
 
             categoryService.DeleteCategory(id);
             return Results.NoContent();
-        }).WithName("DeleteCategory");
+        }).WithName("DeleteCategory").RequireAuthorization();
     }
 }

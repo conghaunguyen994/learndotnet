@@ -11,7 +11,7 @@ public static class ProductEndpoints
         productGroup.MapGet("/", (ProductService productService) =>
         {
             return productService.GetProducts();
-        });
+        }).RequireAuthorization();
 
         productGroup.MapGet("/{id}", (int id, ProductService productService) =>
         {
@@ -20,7 +20,7 @@ public static class ProductEndpoints
             return product is not null
                 ? Results.Ok(product)
                 : Results.NotFound();
-        });
+        }).RequireAuthorization();
         productGroup.MapPost("/", (Product product, ProductService productService) =>
         {
             var createdProduct = productService.CreateProduct(product);
@@ -29,7 +29,7 @@ public static class ProductEndpoints
                 $"/products/{createdProduct.Id}",
                 createdProduct
             );
-        });
+        }).RequireAuthorization();
         productGroup.MapPut("/{id}", (int id, Product product, ProductService productService) =>
         {
             var updatedProduct = productService.UpdateProduct(id, product);
@@ -37,7 +37,7 @@ public static class ProductEndpoints
             return updatedProduct is not null
                 ? Results.Ok(updatedProduct)
                 : Results.NotFound();
-        });
+        }).RequireAuthorization();
         productGroup.MapDelete("/{id}", (int id, ProductService productService) =>
         {
             var deletedProduct = productService.DeleteProduct(id);
@@ -45,7 +45,7 @@ public static class ProductEndpoints
             return deletedProduct is not null
                 ? Results.Ok(deletedProduct)
                 : Results.NotFound();
-        });
+        }).RequireAuthorization();
     }
 
 }

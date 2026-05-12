@@ -11,27 +11,27 @@ public static class OrderEndpoints
         app.MapGet("/orders", (OrderService orderService) =>
         {
             return orderService.GetOrders();
-        }).WithName("GetAllOrders");
+        }).WithName("GetAllOrders").RequireAuthorization();
 
         // GET /orders/{id}
         app.MapGet("/orders/{id}", (int id, OrderService orderService) =>
         {
             var order = orderService.GetOrderById(id);
             return order is not null ? Results.Ok(order) : Results.NotFound();
-        }).WithName("GetOrderById");
+        }).WithName("GetOrderById").RequireAuthorization();
 
         // POST /orders
         app.MapPost("/orders", (Order order, OrderService orderService) =>
         {
             orderService.AddOrder(order);
             return Results.Created($"/orders/{order.Id}", order);
-        }).WithName("CreateOrder");
+        }).WithName("CreateOrder").RequireAuthorization();
 
-         app.MapGet("/orders/count/today", (OrderService orderService) =>
-        {
-            var count = orderService.GetOrderCountForToday();
-            return Results.Ok(new { Date = DateTime.Today, OrderCount = count });
-        }).WithName("GetOrderCountForToday");
+        app.MapGet("/orders/count/today", (OrderService orderService) =>
+       {
+           var count = orderService.GetOrderCountForToday();
+           return Results.Ok(new { Date = DateTime.Today, OrderCount = count });
+       }).WithName("GetOrderCountForToday").RequireAuthorization();
 
         // PUT /orders/{id}
         app.MapPut("/orders/{id}", (int id, Order updatedOrder, OrderService orderService) =>
@@ -45,7 +45,7 @@ public static class OrderEndpoints
             updatedOrder.Id = id;
             orderService.UpdateOrder(updatedOrder);
             return Results.NoContent();
-        }).WithName("UpdateOrder");
+        }).WithName("UpdateOrder").RequireAuthorization();
 
         // DELETE /orders/{id}
         app.MapDelete("/orders/{id}", (int id, OrderService orderService) =>
@@ -58,7 +58,7 @@ public static class OrderEndpoints
 
             orderService.DeleteOrder(id);
             return Results.NoContent();
-        }).WithName("DeleteOrder");
+        }).WithName("DeleteOrder").RequireAuthorization();
     }
-    
+
 }

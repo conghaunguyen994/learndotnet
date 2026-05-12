@@ -23,6 +23,6 @@ public static class UserEndpointsV2
             {
                 Message = "Users API Version 2"
             });
-        });
+        }).RequireAuthorization();
     }
 }

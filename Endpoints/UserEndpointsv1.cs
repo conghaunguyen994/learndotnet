@@ -20,7 +20,7 @@ public static class UserEndpointsV1
         group.MapGet("/", (UserService userService) =>
         {
             return userService.GetUsers();
-        });
+        }).RequireAuthorization();
 
         group.MapGet("/{id}", (int id, UserService userService) =>
         {
@@ -29,6 +29,6 @@ public static class UserEndpointsV1
             return user is not null
                 ? Results.Ok(user)
                 : Results.NotFound();
-        });
+        }).RequireAuthorization();
     }
 }

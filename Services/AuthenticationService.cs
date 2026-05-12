@@ -1,0 +1,119 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using learndotnet.DTOs.Auth;
+using learndotnet.Models;
+using learndotnet.Repositories;
+using Microsoft.IdentityModel.Tokens;
+
+namespace learndotnet.Services;
+
+public class AuthenticationService
+{
+    private readonly IUserRepository _userRepository;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<AuthenticationService> _logger;
+
+    public AuthenticationService(IUserRepository userRepository, IConfiguration configuration, ILogger<AuthenticationService> logger)
+    {
+        _userRepository = userRepository;
+        _configuration = configuration;
+        _logger = logger;
+    }
+
+    public TokenResponse? Login(LoginRequest request)
+    {
+        var user = _userRepository.GetAllUsers().FirstOrDefault(u => u.Email == request.Email);
+        if (user == null)
+        {
+            _logger.LogWarning("Login attempt failed for email: {Email}", request.Email);
+            return null;
+        }
+
+        // In production, use proper password hashing (bcrypt, etc.)
+        // This is a simple example - do NOT use in production
+        if (user.Email != request.Email)
+        {
+            _logger.LogWarning("Invalid credentials for email: {Email}", request.Email);
+            return null;
+        }
+
+        var token = GenerateAccessToken(user);
+        var refreshToken = GenerateRefreshToken();
+
+        return new TokenResponse
+        {
+            AccessToken = token,
+            RefreshToken = refreshToken,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(int.Parse(_configuration["JwtSettings:ExpirationMinutes"] ?? "15"))
+        };
+    }
+
+    public string GenerateAccessToken(User user)
+    {
+        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Secret"] ?? ""));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Name, user.Name)
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: "LearnDotnet",
+            audience: "LearnDotnetUsers",
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["ExpirationMinutes"] ?? "15")),
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public string GenerateRefreshToken()
+    {
+        var randomNumber = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomNumber);
+        return Convert.ToBase64String(randomNumber);
+    }
+
+    public TokenResponse? RefreshToken(string refreshToken)
+    {
+        // In production, store refresh tokens in database with expiration
+        // This is a simple example without token storage
+        try
+        {
+            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Secret"] ?? ""));
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            tokenHandler.ValidateToken(refreshToken, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = key,
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ClockSkew = TimeSpan.Zero
+            }, out SecurityToken validatedToken);
+
+            var newAccessToken = GenerateAccessToken(new User { Id = 1, Email = "", Name = "" });
+            var newRefreshToken = GenerateRefreshToken();
+
+            return new TokenResponse
+            {
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["ExpirationMinutes"] ?? "15"))
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refreshing token");
+            return null;
+        }
+    }
+}
