@@ -10,9 +10,12 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+var port = Environment.GetEnvironmentVariable("PORT");
 
-builder.WebHost.UseUrls($"http://*:{port}");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://*:{port}");
+}
 
 // API Versioning
 builder.Services.AddApiVersioning(options =>
@@ -78,11 +81,13 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Register layers
-builder.Services.AddDataLayer(builder.Configuration);
+builder.Services.AddDataLayer(builder.Configuration, builder.Environment);
 builder.Services.AddBusinessServices();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+Console.WriteLine($"JWT Secret: {jwtSettings["Secret"]}"); // Debugging line to check if the secret is loaded correctly
+
 var secret = jwtSettings["Secret"] ?? "";
 var key = Encoding.ASCII.GetBytes(secret);
 
@@ -121,7 +126,10 @@ app.UseSwaggerUI(options =>
     options.SwaggerEndpoint("/swagger/v2/swagger.json", "LearnDotnet API v2");
 });
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
